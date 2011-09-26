@@ -14,6 +14,8 @@ class IndexController extends Zend_Controller_Action
 			{
 				$builder = new App_Model_Builder($params);
 				$builder->build();
+				
+				$this->view->success = true;
 			}
 		}
 		
