@@ -19,11 +19,21 @@ class App_Form_Site extends Zend_Form
 			->setRequired(true)
 			->addFilter('StringTrim')
 			->addFilter('StripTags');
+			
+		$entity = new Zend_Form_Element_MultiCheckbox('files');
+		$entity->setLabel('Choose all types of files you want to create:')
+			->setMultiOptions(array(
+				'ENTITY' => 'Entity Models',
+				'MAPPER' => 'Data Mapper',
+				'DBTABLE' => 'Zend Db Table',
+				'METADATA' => 'Metadata Mappers'
+		));
 				
 		$site_form = new Zend_Form_SubForm();
 		$site_form->addElements(array(
 			$name,
-			$author
+			$author,
+			$entity
 		));
 		
 		$this->addSubForm($site_form, 'site');

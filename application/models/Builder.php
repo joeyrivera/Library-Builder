@@ -26,13 +26,13 @@ class App_Model_Builder
 		$this->_paths['site']['root'] = $this->_paths['sites'] . $this->_site_options['name'];
 		$this->_paths['site']['model'] = $this->_paths['site']['root'] . '/Model/';
 		$this->_paths['site']['mapper'] = $this->_paths['site']['model'] . '/Mapper/';
-		$this->_paths['site']['meta'] = $this->_paths['site']['mapper'] . '/Meta/';
+		$this->_paths['site']['metadata'] = $this->_paths['site']['mapper'] . '/Metadata/';
 		$this->_paths['site']['db_table'] = $this->_paths['site']['model'] . '/DbTable/';
 		
 		$this->_paths['ns']['model'] = $this->_site_options['name'] . '_Model_';
 		$this->_paths['ns']['mapper'] = $this->_paths['ns']['model'] . 'Mapper_';
-		$this->_paths['ns']['meta'] = $this->_paths['ns']['mapper'] . 'Meta_';
-		$this->_paths['ns']['db_table'] = $this->_paths['ns']['model'] . 'DbTable_';	
+		$this->_paths['ns']['metadata'] = $this->_paths['ns']['mapper'] . 'Metadata_';
+		$this->_paths['ns']['db_table'] = $this->_paths['ns']['model'] . 'DbTable_';
 	}
 	
 	public function build()
@@ -68,18 +68,34 @@ class App_Model_Builder
 				mkdir($path, null, true);
 			}
 		}
-		
+
 		// create each entity
 		$entities = array();
 		foreach($tables as $table)
 		{
-			$entity = $this->_createEntity($table, $this->_tableNameToClassName($table));
-			$mapper = $this->_createMapper($this->_tableNameToClassName($table));
-			$db_table = $this->_createDbTable($table, $this->_tableNameToClassName($table));
+			if(array_search('ENTITY', $this->_site_options['files']) !== false)
+			{
+				$entity = $this->_createEntity($table, $this->_tableNameToClassName($table));
+				file_put_contents($this->_paths['site']['model'] . $entity->getFilename(), $entity->generate());
+			}
 			
-			file_put_contents($this->_paths['site']['model'] . $entity->getFilename(), $entity->generate());
-			file_put_contents($this->_paths['site']['mapper'] . $mapper->getFilename(), $mapper->generate());
-			file_put_contents($this->_paths['site']['db_table'] . $db_table->getFilename(), $db_table->generate());
+			if(array_search('MAPPER', $this->_site_options['files']) !== false)
+			{
+				$mapper = $this->_createMapper($this->_tableNameToClassName($table));
+				file_put_contents($this->_paths['site']['mapper'] . $mapper->getFilename(), $mapper->generate());
+			}
+			
+			if(array_search('METADATA', $this->_site_options['files']) !== false)
+			{
+				$metadata = $this->_createMetadata($table, $this->_tableNameToClassName($table));
+				file_put_contents($this->_paths['site']['metadata'] . $metadata->getFilename(), $metadata->generate());
+			}
+			
+			if(array_search('DBTABLE', $this->_site_options['files']) !== false)
+			{
+				$db_table = $this->_createDbTable($table, $this->_tableNameToClassName($table));
+				file_put_contents($this->_paths['site']['db_table'] . $db_table->getFilename(), $db_table->generate());
+			}
 		}
 	}
 	
@@ -144,6 +160,44 @@ class App_Model_Builder
 		
 		$docblock = new Zend_CodeGenerator_Php_Docblock();
 		$docblock->setShortDescription("{$name} Mapper in charge of creating entit(ies) of type {$name}.")
+			->setTag(new Zend_CodeGenerator_Php_Docblock_Tag(array(
+				'name' => 'author', 
+				'description' => $this->_site_options['author'])
+		));
+
+		$class->setDocblock($docblock);	
+			
+		$file= new Zend_CodeGenerator_Php_File();
+		$file->setClass($class)
+			->setFilename($name . '.php');
+		
+		return $file;
+	}
+	
+	protected function _createMetadata($table, $name)
+	{
+		$details = $this->_db->describeTable($table);
+		
+		// get columns
+		$properties = array();
+		foreach($details as $key => $value)
+		{
+			$properties[$key] = $key;
+		}
+		
+		$class = new Zend_CodeGenerator_Php_Class();
+		$class->setName($this->_paths['ns']['metadata'] . $name)
+			->setExtendedClass($this->_paths['ns']['metadata'] . 'Abstract');
+		
+		$property = new Zend_CodeGenerator_Php_Property();
+		$property->setName('_data')
+			->setVisibility('protected')
+			->setDefaultValue($properties);
+		
+		$class->setProperty($property);
+		
+		$docblock = new Zend_CodeGenerator_Php_Docblock();
+		$docblock->setShortDescription("{$name} Metadata Mapper. Allows overriding of table to entity field to property naming convension.")
 			->setTag(new Zend_CodeGenerator_Php_Docblock_Tag(array(
 				'name' => 'author', 
 				'description' => $this->_site_options['author'])
