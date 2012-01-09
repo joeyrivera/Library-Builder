@@ -25,11 +25,13 @@ class App_Model_Builder
 		// make sure all paths are set
 		$this->_paths['site']['root'] = $this->_paths['sites'] . $this->_site_options['name'];
 		$this->_paths['site']['model'] = $this->_paths['site']['root'] . '/Model/';
+		$this->_paths['site']['entity'] = $this->_paths['site']['model'] . '/Entity/';
 		$this->_paths['site']['mapper'] = $this->_paths['site']['model'] . '/Mapper/';
 		$this->_paths['site']['metadata'] = $this->_paths['site']['mapper'] . '/Metadata/';
 		$this->_paths['site']['db_table'] = $this->_paths['site']['model'] . '/DbTable/';
 		
 		$this->_paths['ns']['model'] = $this->_site_options['name'] . '_Model_';
+		$this->_paths['ns']['entity'] = $this->_paths['ns']['model'] . 'Entity_';
 		$this->_paths['ns']['mapper'] = $this->_paths['ns']['model'] . 'Mapper_';
 		$this->_paths['ns']['metadata'] = $this->_paths['ns']['mapper'] . 'Metadata_';
 		$this->_paths['ns']['db_table'] = $this->_paths['ns']['model'] . 'DbTable_';
@@ -76,7 +78,7 @@ class App_Model_Builder
 			if(array_search('ENTITY', $this->_site_options['files']) !== false)
 			{
 				$entity = $this->_createEntity($table, $this->_tableNameToClassName($table));
-				file_put_contents($this->_paths['site']['model'] . $entity->getFilename(), $entity->generate());
+				file_put_contents($this->_paths['site']['entity'] . $entity->getFilename(), $entity->generate());
 			}
 			
 			if(array_search('MAPPER', $this->_site_options['files']) !== false)
@@ -111,8 +113,8 @@ class App_Model_Builder
 		}
 		
 		$class = new Zend_CodeGenerator_Php_Class();
-		$class->setName($this->_paths['ns']['model'] . $name)
-			->setExtendedClass($this->_paths['ns']['model'] . 'Entity');
+		$class->setName($this->_paths['ns']['entity'] . $name)
+			->setExtendedClass($this->_paths['ns']['entity'] . 'Abstract');
 		
 		$property = new Zend_CodeGenerator_Php_Property();
 		$property->setName('_data')
@@ -146,7 +148,7 @@ class App_Model_Builder
 		$model_name = new Zend_CodeGenerator_Php_Property();
 		$model_name->setName('_model_name')
 			->setVisibility('protected')
-			->setDefaultValue($this->_paths['ns']['model'] . $name);
+			->setDefaultValue($this->_paths['ns']['entity'] . $name);
 			
 		$db_table_name = new Zend_CodeGenerator_Php_Property();
 		$db_table_name->setName('_db_table_name')
